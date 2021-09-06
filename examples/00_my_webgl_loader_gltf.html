@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>MODDED - Center OBJ GLTF Demo</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link type="text/css" rel="stylesheet" href="main.css">
+	</head>
+
+	<body>
+
+		<div id="info" style="display: none;">
+			<a href="https://threejs.org" target="_blank" rel="noopener">Center OBJ GLTF Demo</a> - MODDED GLTFLoader + compression extensions<br />
+		</div>
+
+		<script type="module">
+
+			import * as THREE from '../build/three.module.js'
+
+			import { RoomEnvironment } from './jsm/environments/RoomEnvironment.js'
+			import { OrbitControls } from './jsm/controls/OrbitControls.js'
+			import { GLTFLoader } from './jsm/loaders/GLTFLoader.js'
+
+			import { KTX2Loader } from './jsm/loaders/KTX2Loader.js'
+			import { MeshoptDecoder } from './jsm/libs/meshopt_decoder.module.js'
+
+			let camera, scene, raycaster, renderer
+
+			const mouse = new THREE.Vector2();
+			const target = new THREE.Vector2();
+			const windowHalf = new THREE.Vector2( window.innerWidth / 2, window.innerHeight / 2 );
+
+
+			init()
+			// animate()
+
+			function init() {
+
+				const container = document.createElement( 'div' )
+				document.body.appendChild( container )
+
+				renderer = new THREE.WebGLRenderer( { antialias: true } )
+				renderer.setPixelRatio( window.devicePixelRatio )
+				renderer.setSize( window.innerWidth, window.innerHeight )
+				renderer.toneMapping = THREE.ACESFilmicToneMapping
+				renderer.toneMappingExposure = 1
+				renderer.outputEncoding = THREE.sRGBEncoding
+				container.appendChild( renderer.domElement )
+
+				camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000 )
+				camera.position.set( 0, 100, 0 )
+				// camera.position.z = 50;
+
+				const environment = new RoomEnvironment()
+				const pmremGenerator = new THREE.PMREMGenerator( renderer )
+
+				scene = new THREE.Scene()
+				scene.background = new THREE.Color( 0xfefefe )
+				scene.environment = pmremGenerator.fromScene( environment ).texture
+
+				const grid = new THREE.GridHelper( 500, 10, 0xb0b0b0, 0xb0b0b0 )
+				grid.material.opacity = 0.5
+				grid.material.depthWrite = false
+				grid.material.transparent = true
+				scene.add( grid )
+
+				const ktx2Loader = new KTX2Loader()
+					.setTranscoderPath( 'js/libs/basis/' )
+					.detectSupport( renderer )
+
+				const loader = new GLTFLoader().setPath( '../etc/wip_assets/' )
+				loader.setKTX2Loader( ktx2Loader )
+				loader.setMeshoptDecoder( MeshoptDecoder )
+				loader.load( 'ochtaedhronoid_v1.glb', function ( gltf ) {
+
+					gltf.scene.position.y = 8
+
+					scene.add( gltf.scene )
+
+					render()
+
+				} )
+
+				const controls = new OrbitControls( camera, renderer.domElement )
+				controls.addEventListener( 'change', render ) // use if there is no animation loop
+				controls.minDistance = 400
+				controls.maxDistance = 1000
+				controls.target.set( 10, 90, - 16 )
+				controls.update()
+
+				window.addEventListener( 'resize', onWindowResize )
+
+			}
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight
+				camera.updateProjectionMatrix()
+
+				renderer.setSize( window.innerWidth, window.innerHeight )
+
+				render()
+
+			}
+
+
+			function render() {
+
+				renderer.render( scene, camera );
+
+			}
+
+		</script>
+
+	</body>
+</html>

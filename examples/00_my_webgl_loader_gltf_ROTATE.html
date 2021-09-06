@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>MODDED - Center OBJ GLTF Demo</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link type="text/css" rel="stylesheet" href="main.css">
+	</head>
+
+	<body>
+
+		<div id="info" style="display: none;">
+			<a href="https://threejs.org" target="_blank" rel="noopener">Center OBJ GLTF Demo</a> - MODDED GLTFLoader + compression extensions<br />
+		</div>
+
+
+    <script type="module">
+
+      import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.122/build/three.module.js';
+		import { RoomEnvironment } from './jsm/environments/RoomEnvironment.js'
+		import { OrbitControls } from './jsm/controls/OrbitControls.js'
+		import { GLTFLoader } from './jsm/loaders/GLTFLoader.js'
+
+		import { KTX2Loader } from './jsm/loaders/KTX2Loader.js'
+		import { MeshoptDecoder } from './jsm/libs/meshopt_decoder.module.js'
+
+
+      let camera, scene, renderer;
+
+      const mouse = new THREE.Vector2();
+      const target = new THREE.Vector2();
+      const windowHalf = new THREE.Vector2( 50, 50 );
+
+      init();
+      animate();
+
+      function init() {
+
+				const container = document.createElement( 'div' )
+				document.body.appendChild( container )
+
+
+				renderer = new THREE.WebGLRenderer( { antialias: true } )
+				renderer.setPixelRatio( window.devicePixelRatio )
+				renderer.setSize( window.innerWidth, window.innerHeight )
+				renderer.toneMapping = THREE.ACESFilmicToneMapping
+				renderer.toneMappingExposure = 1
+				renderer.outputEncoding = THREE.sRGBEncoding
+				container.appendChild( renderer.domElement )
+
+
+          camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.1, 500 );
+          camera.position.z = 50;
+					// camera.position.set( 0, 100, 0 )
+
+                  const environment = new RoomEnvironment()
+                  const pmremGenerator = new THREE.PMREMGenerator( renderer )
+
+          scene = new THREE.Scene();
+
+
+				scene.background = new THREE.Color( 0xfefefe )
+				scene.environment = pmremGenerator.fromScene( environment ).texture
+
+				const grid = new THREE.GridHelper( 500, 10, 0xb0b0b0, 0xb0b0b0 )
+				grid.material.opacity = 0.5
+				grid.material.depthWrite = false
+				grid.material.transparent = true
+				scene.add( grid )
+
+				const ktx2Loader = new KTX2Loader()
+					.setTranscoderPath( 'js/libs/basis/' )
+					.detectSupport( renderer )
+
+					const loader = new GLTFLoader().setPath( '../etc/wip_assets/' )
+					loader.setKTX2Loader( ktx2Loader )
+					loader.setMeshoptDecoder( MeshoptDecoder )
+					loader.load( 'ochtaedhronoid_v1.glb', function ( gltf ) {
+
+						gltf.scene.position.y = 8
+
+						scene.add( gltf.scene )
+
+						// render()
+
+					} )
+
+          // renderer = new THREE.WebGLRenderer( { antialias: true } );
+
+          document.addEventListener( 'mousemove', onMouseMove, false );
+          document.addEventListener( 'wheel', onMouseWheel, false );
+      		window.addEventListener( 'resize', onResize, false );
+
+      }
+
+      function onMouseMove( event ) {
+
+      	mouse.x = ( event.clientX - windowHalf.x );
+      	mouse.y = ( event.clientY - windowHalf.x );
+
+      }
+
+      function onMouseWheel( event ) {
+
+        camera.position.z += event.deltaY * 0.1; // move camera along z-axis
+
+      }
+
+      function onResize( event ) {
+
+      	const width = window.innerWidth;
+      	const height = window.innerHeight;
+
+        windowHalf.set( 50, 50 );
+
+        camera.aspect = width / height;
+      	camera.updateProjectionMatrix();
+      	renderer.setSize( width, height );
+
+      }
+
+      function animate() {
+
+      	target.x = ( 1 - mouse.x ) * 0.002;
+        target.y = ( 1 - mouse.y ) * 0.002;
+
+        camera.rotation.x += 0.05 * ( target.y - camera.rotation.x );
+        camera.rotation.y += 0.05 * ( target.x - camera.rotation.y );
+
+        requestAnimationFrame( animate );
+        renderer.render( scene, camera );
+
+      }
+
+
+		</script>
+
+	</body>
+</html>
